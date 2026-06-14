@@ -181,7 +181,7 @@ def main():
     )
 
     if honeypot_rate >= 0.10:
-        print("  ⚠️  WARNING: Honeypot rate exceeds 10% — submission may be DQ'd!")
+        print("  [WARNING] Honeypot rate exceeds 10% -- submission may be DQ'd!")
 
     # ── Step 4: Generate reasoning ────────────────────────────────────────
     print("[4/5] Generating reasoning...")
@@ -219,7 +219,7 @@ def main():
 
     total_time = time.time() - start_time
     print(f"\n{'=' * 60}")
-    print(f"  ✅ Done! {top_n} candidates ranked in {total_time:.1f}s")
+    print(f"  [OK] Done! {top_n} candidates ranked in {total_time:.1f}s")
     print(f"  Output: {out_path}")
     print(f"{'=' * 60}")
 
