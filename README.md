@@ -119,12 +119,29 @@ uvicorn backend.app:app --host 0.0.0.0 --port 8000
 streamlit run demo/dashboard.py
 ```
 
-### Docker
+### Docker & Reproducibility
 
+This project uses Docker to ensure **perfect reproducibility** across different environments. The `Dockerfile` fixes the OS, Python version (`3.12-slim`), and importantly, **pre-downloads all transformer models** during the build process. This prevents runtime network issues and guarantees the exact same model weights are used every time.
+
+**1. Start the Web Services (API & Dashboard):**
 ```bash
-docker-compose up --build
+docker-compose up --build -d
 # API: http://localhost:8000
 # Dashboard: http://localhost:8501
+```
+
+**2. Run the CLI Ranking Script via Docker:**
+You can run the deterministic ranking pipeline inside the running container. The `./data` folder is mounted, so input and output files sync directly with your host machine.
+```bash
+docker-compose exec api python scripts/run_ranking.py \
+  --candidates data/sample_input/sample_candidates.json \
+  --out data/WorthyHire.csv \
+  --verbose
+```
+
+**3. Stop the services:**
+```bash
+docker-compose down
 ```
 
 ---
