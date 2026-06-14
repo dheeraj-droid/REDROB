@@ -4,7 +4,7 @@
 # ============================================================================
 # Team identity
 # ============================================================================
-team_name: "dheeraj-droid"
+team_name: "WorthyHire"
 
 primary_contact:
   name: "Dheeraj Reddy"
@@ -21,9 +21,9 @@ team_members:
 # ============================================================================
 github_repo: "https://github.com/dheeraj-droid/REDROB"
 
-sandbox_link: "https://huggingface.co/spaces/dheeraj-droid/redrob-ranker"
+sandbox_link: "https://redrob-7t2k4f6cxtvy4igwxmuhpi.streamlit.app/"
 
-reproduce_command: "python scripts/run_ranking.py --candidates ./candidates.jsonl --out ./dheeraj-droid.csv --verbose"
+reproduce_command: "python scripts/run_ranking.py --candidates ./candidates.jsonl --out ./WorthyHire.csv --verbose"
 
 # ============================================================================
 # Compute environment
@@ -36,8 +36,8 @@ compute:
   os: "Windows 11"
   uses_gpu_for_inference: false
   has_network_during_ranking: false
-  pre_computation_required: false
-  pre_computation_time_minutes: 0
+  pre_computation_required: true
+  pre_computation_time_minutes: 1
 
 # ============================================================================
 # AI tools declaration
