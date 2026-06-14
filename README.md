@@ -10,11 +10,11 @@
 
 | Metric | Value |
 |--------|-------|
-| **Candidates processed** | 99,999 |
+| **Candidates processed** | 100,000 |
 | **Honeypots in top 100** | **0** |
 | **Top 10 titles** | All Senior AI / ML / NLP Engineers |
 | **Total runtime** | 143 seconds (CPU only) |
-| **Honeypots detected** | 68,359 (68.4%) |
+| **Honeypots detected** | 68,360 (68.4%) |
 
 ---
 
