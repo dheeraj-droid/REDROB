@@ -59,9 +59,11 @@
 | **Behavioral Signals** | 10% | Response rate, speed, availability, engagement |
 | **Education** | 5% | Degree level + field relevance |
 
-### Honeypot Detection (10 Checks)
+### Honeypot Detection (Hardcoded Python Heuristics)
 
-| Check | What It Catches | Hit Rate |
+These are explicit, rule-based `if/else` heuristics (string matching and arithmetic) running in `honeypot_detector.py` to catch traps without needing LLMs.
+
+| Hardcoded Python Rule | What It Catches | Hit Rate |
 |-------|----------------|----------|
 | Summary-title contradiction | Summary says "marketing" but title is "Civil Engineer" | 38,577 |
 | Title-description domain clash | Title domain ≠ description domain | ~35,000 |
@@ -161,7 +163,7 @@ WorthyHire/
 ├── docker-compose.yml              # Multi-service deployment
 ├── requirements.txt                # Python dependencies
 ├── submission_metadata.yaml        # Challenge submission metadata
-└── dheeraj-droid.csv               # Final ranked output (100 candidates)
+└── WorthyHire.csv                  # Final ranked output (100 candidates)
 ```
 
 ---
