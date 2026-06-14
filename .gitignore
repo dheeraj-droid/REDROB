@@ -9,6 +9,7 @@ build/
 *.egg
 
 # Virtual environment
+.venv/
 venv/
 .env/
 env/
@@ -29,12 +30,18 @@ Thumbs.db
 *.jsonl.gz
 *.zip
 
-# Keep sample data
-!sample_candidates.json
-!sample_submission.csv
+# Model cache
+.cache/
+
+# Generated outputs (regenerated on each run)
+submission.csv
+fairness_report.json
 
 # Logs
 *.log
 
-# Temp
+# Temp / scratch files
 read_docx.py
+analyze_*.py
+test_*.py
+docx_output.txt

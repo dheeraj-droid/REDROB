@@ -1,31 +1,38 @@
 """
-Redrob AI — Intelligent Candidate Ranking Dashboard
+WorthyHire — Interactive Candidate Ranking Dashboard
 
 A Streamlit web application for recruiters to visualize
 candidate rankings and explore the scoring breakdown.
 
-Run: streamlit run app.py
+Run: streamlit run demo/dashboard.py
 """
 
-import streamlit as st
-import pandas as pd
+import sys
+import os
 import json
-import io
-import time
+
+# Ensure project root is on path
+_project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _project_root not in sys.path:
+    sys.path.insert(0, _project_root)
+
+import streamlit as st
 import plotly.graph_objects as go
-import plotly.express as px
 
 from jd_parser import get_jd_requirements
 from honeypot_detector import detect_honeypot
 from scorer import score_candidate, DIMENSION_WEIGHTS
 from reasoning_generator import generate_reasoning
+from skill_taxonomy import classify_skill, get_category_relevance
+from backend.ranking.hybrid_ranker import _normalize_score
+from backend.config import FUSION_WEIGHTS
 
 
 # ── Page Config ───────────────────────────────────────────────────────────
 
 st.set_page_config(
-    page_title="Redrob AI - Candidate Ranker",
-    page_icon="",
+    page_title="WorthyHire - AI Candidate Ranker",
+    page_icon="🎯",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -165,27 +172,6 @@ st.markdown("""
         font-weight: 700;
     }
 
-    /* Sidebar styling */
-    .sidebar .sidebar-content {
-        background: #0f172a;
-    }
-
-    .stButton>button {
-        background: linear-gradient(135deg, #e94560, #d63384);
-        color: white;
-        border: none;
-        border-radius: 10px;
-        padding: 0.7rem 2rem;
-        font-weight: 600;
-        font-size: 1rem;
-        transition: all 0.3s ease;
-        width: 100%;
-    }
-    .stButton>button:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 6px 20px rgba(233,69,96,0.3);
-    }
-
     /* Tags */
     .skill-tag {
         display: inline-block;
@@ -241,6 +227,22 @@ st.markdown("""
         border-radius: 12px;
         background: rgba(15,23,42,0.5);
     }
+
+    .stButton>button {
+        background: linear-gradient(135deg, #e94560, #d63384);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        padding: 0.7rem 2rem;
+        font-weight: 600;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        width: 100%;
+    }
+    .stButton>button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(233,69,96,0.3);
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -260,7 +262,7 @@ def create_radar_chart(dim_scores: dict) -> go.Figure:
 
     cats = list(labels.values())
     vals = [dim_scores.get(k, 0) for k in labels.keys()]
-    vals.append(vals[0])  # Close the polygon
+    vals.append(vals[0])
     cats.append(cats[0])
 
     fig = go.Figure()
@@ -315,16 +317,14 @@ def create_score_distribution(ranked_data: list) -> go.Figure:
     ))
     fig.update_layout(
         xaxis=dict(
-            title="Rank",
+            title=dict(text="Rank", font=dict(color='#94a3b8')),
             gridcolor='rgba(255,255,255,0.05)',
             tickfont=dict(color='#64748b'),
-            titlefont=dict(color='#94a3b8'),
         ),
         yaxis=dict(
-            title="Score",
+            title=dict(text="Score", font=dict(color='#94a3b8')),
             gridcolor='rgba(255,255,255,0.05)',
             tickfont=dict(color='#64748b'),
-            titlefont=dict(color='#94a3b8'),
         ),
         margin=dict(t=20, b=50, l=60, r=20),
         height=300,
@@ -355,7 +355,6 @@ def render_candidate_card(entry: dict, rank: int):
     candidate = entry["candidate"]
     score_result = entry["score_result"]
     dim_scores = score_result["dimension_scores"]
-    signals = score_result["signals"]
     profile = candidate.get("profile", {})
     skills = candidate.get("skills", [])
     redrob = candidate.get("redrob_signals", {})
@@ -389,7 +388,6 @@ def render_candidate_card(entry: dict, rank: int):
 
             # Skills
             st.markdown("**Skills:**")
-            from skill_taxonomy import classify_skill, get_category_relevance
             skill_html = ""
             for s in skills:
                 cat = classify_skill(s.get("name", ""))
@@ -402,7 +400,9 @@ def render_candidate_card(entry: dict, rank: int):
                     tag_class = "skill-tag skill-tag-yellow"
                 else:
                     tag_class = "skill-tag skill-tag-gray"
-                skill_html += f'<span class="{tag_class}">{s.get("name", "")} ({s.get("proficiency", "")[0].upper()})</span> '
+                prof = s.get("proficiency", "")
+                prof_initial = prof[0].upper() if prof else "?"
+                skill_html += f'<span class="{tag_class}">{s.get("name", "")} ({prof_initial})</span> '
             st.markdown(skill_html, unsafe_allow_html=True)
 
             # Reasoning
@@ -411,12 +411,12 @@ def render_candidate_card(entry: dict, rank: int):
 
             # Honeypot check
             if entry.get("is_honeypot"):
-                st.markdown('<div class="honeypot-badge">HONEYPOT DETECTED - Profile flagged as potentially impossible</div>', unsafe_allow_html=True)
+                st.markdown('<div class="honeypot-badge">⚠ HONEYPOT DETECTED - Profile flagged as potentially impossible</div>', unsafe_allow_html=True)
 
         with col2:
             # Radar chart
             fig = create_radar_chart(dim_scores)
-            st.plotly_chart(fig, use_container_width=True, key=f"radar_{rank}")
+            st.plotly_chart(fig, width="stretch", key=f"radar_{rank}")
 
             # Score breakdown
             for dim_name, dim_label in [
@@ -445,14 +445,14 @@ def main():
     # Hero header
     st.markdown("""
     <div class="hero-header">
-        <h1>Redrob AI Candidate Ranker</h1>
-        <p>Intelligent candidate discovery beyond keyword matching - analyzing career fit, skill depth, behavioral signals, and more.</p>
+        <h1>🎯 WorthyHire — AI Candidate Ranker</h1>
+        <p>Intelligent candidate discovery using semantic understanding, structured career signals, and India-specific hiring context.</p>
     </div>
     """, unsafe_allow_html=True)
 
     # Sidebar
     with st.sidebar:
-        st.markdown("### Configuration")
+        st.markdown("### ⚙️ Configuration")
 
         jd = get_jd_requirements()
         st.markdown(f"**Target Role:** {jd.title}")
@@ -464,18 +464,18 @@ def main():
         uploaded_file = st.file_uploader(
             "Upload candidates (JSONL or JSON)",
             type=["jsonl", "json"],
-            help="Upload a JSONL file with candidate profiles"
+            help="Upload a JSONL or JSON file with candidate profiles"
         )
 
-        use_sample = st.checkbox("Use sample data (10 candidates)", value=True)
+        use_sample = st.checkbox("Use sample data", value=True)
 
         top_n = st.slider("Top N candidates", 5, 100, 20)
 
-        run_btn = st.button("Run Ranking", type="primary")
+        run_btn = st.button("🚀 Run Ranking", type="primary")
 
         st.markdown("---")
-        st.markdown("### Scoring Weights")
-        for dim, weight in DIMENSION_WEIGHTS.items():
+        st.markdown("### 📊 Fusion Weights")
+        for dim, weight in FUSION_WEIGHTS.items():
             st.markdown(f"**{dim.replace('_', ' ').title()}:** {weight:.0%}")
 
     # Main content
@@ -487,20 +487,27 @@ def main():
                 content = uploaded_file.read().decode("utf-8")
                 if uploaded_file.name.endswith(".jsonl"):
                     for line in content.strip().split("\n"):
-                        if line.strip():
-                            candidates.append(json.loads(line))
+                        line = line.strip()
+                        if line:
+                            try:
+                                candidates.append(json.loads(line, strict=False))
+                            except json.JSONDecodeError:
+                                pass
                 else:
-                    data = json.loads(content)
-                    if isinstance(data, list):
-                        candidates = data
-                    else:
-                        candidates = [data]
+                    try:
+                        data = json.loads(content, strict=False)
+                        if isinstance(data, list):
+                            candidates = data
+                        else:
+                            candidates = [data]
+                    except json.JSONDecodeError:
+                        st.error("Failed to parse JSON file. It may be malformed.")
+                        return
             elif use_sample:
-                # Load sample candidates
-                import os
                 sample_paths = [
-                    "sample_candidates.json",
+                    "data/sample_input/sample_candidates.json",
                     "[PUB] India_runs_data_and_ai_challenge/[PUB] India_runs_data_and_ai_challenge/India_runs_data_and_ai_challenge/sample_candidates.json",
+                    "sample_candidates.json",
                 ]
                 for sp in sample_paths:
                     if os.path.exists(sp):
@@ -574,30 +581,33 @@ def main():
             st.markdown("<br>", unsafe_allow_html=True)
 
             # Score distribution chart
-            st.markdown("### Score Distribution")
+            st.markdown("### 📈 Score Distribution")
             fig = create_score_distribution(ranked_data)
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
 
             # Candidate cards
-            st.markdown("### Ranked Candidates")
+            st.markdown("### 👥 Ranked Candidates")
 
             for i, entry in enumerate(ranked_data):
                 render_candidate_card(entry, i + 1)
 
             # Export
             st.markdown("---")
-            st.markdown("### Export")
+            st.markdown("### 📥 Export")
 
             csv_data = "candidate_id,rank,score,reasoning\n"
+            max_raw = ranked_data[0]["final_score"] if ranked_data else 1.0
+            min_raw = ranked_data[-1]["final_score"] if ranked_data else 0.0
+            total = len(ranked_data)
             for i, entry in enumerate(ranked_data):
                 reasoning = generate_reasoning(
                     entry["candidate"], entry["score_result"], i + 1
                 )
-                score = 0.999 - i * (0.799 / max(len(ranked_data) - 1, 1))
+                score = _normalize_score(entry["final_score"], i + 1, total, min_raw, max_raw)
                 csv_data += f'{entry["candidate_id"]},{i+1},{score:.4f},"{reasoning}"\n'
 
             st.download_button(
-                label="Download CSV",
+                label="⬇️ Download CSV",
                 data=csv_data,
                 file_name="submission.csv",
                 mime="text/csv",
@@ -606,7 +616,7 @@ def main():
         # Landing state
         st.markdown("""
         <div style="text-align:center; padding: 4rem 2rem;">
-            <h2 style="color:#e94560; font-weight:700;">Ready to Rank</h2>
+            <h2 style="color:#e94560; font-weight:700;">Ready to Rank 🚀</h2>
             <p style="color:#64748b; font-size:1.1rem; max-width:600px; margin:1rem auto;">
                 Upload candidate profiles or use the sample data, then click
                 <strong>Run Ranking</strong> to see AI-powered candidate scoring in action.
@@ -619,20 +629,20 @@ def main():
         with col1:
             st.markdown("""
             <div class="stat-card" style="text-align:left; padding:1.5rem;">
-                <div style="color:#e94560; font-weight:700; font-size:1.1rem; margin-bottom:0.5rem;">Semantic Understanding</div>
-                <div style="color:#94a3b8; font-size:0.9rem;">Goes beyond keywords to understand career trajectories, skill depth, and genuine role fit.</div>
+                <div style="color:#e94560; font-weight:700; font-size:1.1rem; margin-bottom:0.5rem;">🧠 Semantic Understanding</div>
+                <div style="color:#94a3b8; font-size:0.9rem;">Goes beyond keywords using BAAI/bge-small embeddings to understand career trajectories, skill depth, and genuine role fit.</div>
             </div>""", unsafe_allow_html=True)
         with col2:
             st.markdown("""
             <div class="stat-card" style="text-align:left; padding:1.5rem;">
-                <div style="color:#f97316; font-weight:700; font-size:1.1rem; margin-bottom:0.5rem;">Trap Detection</div>
+                <div style="color:#f97316; font-weight:700; font-size:1.1rem; margin-bottom:0.5rem;">🕵️ Trap Detection</div>
                 <div style="color:#94a3b8; font-size:0.9rem;">7 heuristic checks catch honeypot candidates with impossible profiles and keyword-stuffing.</div>
             </div>""", unsafe_allow_html=True)
         with col3:
             st.markdown("""
             <div class="stat-card" style="text-align:left; padding:1.5rem;">
-                <div style="color:#10b981; font-weight:700; font-size:1.1rem; margin-bottom:0.5rem;">Behavioral Signals</div>
-                <div style="color:#94a3b8; font-size:0.9rem;">Weighs platform engagement, response rates, and availability for recruiter-ready shortlists.</div>
+                <div style="color:#10b981; font-weight:700; font-size:1.1rem; margin-bottom:0.5rem;">⚖️ Fairness Audit</div>
+                <div style="color:#94a3b8; font-size:0.9rem;">Statistical fairness checks ensure no bias based on college tier, location, or career length.</div>
             </div>""", unsafe_allow_html=True)
 
 

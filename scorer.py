@@ -34,10 +34,10 @@ from skill_taxonomy import (
 # ── Dimension weights ─────────────────────────────────────────────────────
 DIMENSION_WEIGHTS = {
     "role_fit":      0.30,
-    "skills":        0.25,
+    "skills":        0.30,   # Was 0.25 — skills should dominate for technical roles
     "career":        0.15,
     "education":     0.05,
-    "behavioral":    0.15,
+    "behavioral":    0.10,   # Was 0.15 — prevent behavioral from drowning skill match
     "red_flags":     0.10,
 }
 
@@ -605,19 +605,19 @@ def _score_behavioral(signals: dict, profile: dict, jd: JDRequirements) -> tuple
 
     # Combine with weights
     final = (
-        otw_score * 0.09 +            # Was 0.12 (-0.03 for apps)
+        otw_score * 0.09 +
         recency_score * 0.12 +
-        resp_score * 0.12 +           # Was 0.18 (-0.06 for speed)
+        resp_score * 0.14 +           # Was 0.12 (+0.02 from location)
         speed_score * 0.06 +
         notice_score * 0.10 +
         completeness_score * 0.05 +
-        github_score * 0.10 +
+        github_score * 0.12 +         # Was 0.10 (+0.02 from location)
         interview_score * 0.05 +
         offer_score * 0.03 +
         verification_score * 0.05 +
-        location_score * 0.15 +
-        demand_score * 0.05 +         # Replaces saved_score
-        app_score * 0.03
+        location_score * 0.08 +       # Was 0.15 — reduced to stop location dominating
+        demand_score * 0.05 +
+        app_score * 0.03              # Non-location behavioral signals matter more now
     )
 
     return final, sig

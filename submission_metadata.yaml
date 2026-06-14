@@ -1,5 +1,5 @@
-# Redrob Hackathon — Submission Metadata
-# Filled in for the Intelligent Candidate Discovery & Ranking Challenge
+# WorthyHire — Submission Metadata
+# Redrob India Runs Data & AI Challenge
 
 # ============================================================================
 # Team identity
@@ -8,22 +8,22 @@ team_name: "dheeraj-droid"
 
 primary_contact:
   name: "Dheeraj Reddy"
-  email: "dheerajreddy@example.com"
-  phone: "+91-XXXXXXXXXX"
+  email: "dheerajreddy035@gmail.com"
+  phone: "+91-9347078099"
 
 team_members:
   - name: "Dheeraj Reddy"
-    email: "dheerajreddy@example.com"
-    role: "ML Engineer"
+    email: "dheerajreddy035@gmail.com"
+    role: "AI Engineer"
 
 # ============================================================================
 # Code and reproducibility
 # ============================================================================
-github_repo: "https://github.com/dheeraj-droid/redrob-ai-ranker"
+github_repo: "https://github.com/dheeraj-droid/REDROB"
 
 sandbox_link: "https://huggingface.co/spaces/dheeraj-droid/redrob-ranker"
 
-reproduce_command: "python rank.py --candidates ./candidates.jsonl --out ./submission.csv"
+reproduce_command: "python scripts/run_ranking.py --candidates ./candidates.jsonl --out ./dheeraj-droid.csv --verbose"
 
 # ============================================================================
 # Compute environment
@@ -33,7 +33,7 @@ compute:
   cpu_cores: 8
   ram_gb: 16
   python_version: "3.12.11"
-  os: "Windows"
+  os: "Windows 11"
   uses_gpu_for_inference: false
   has_network_during_ranking: false
   pre_computation_required: false
@@ -43,28 +43,33 @@ compute:
 # AI tools declaration
 # ============================================================================
 ai_tools_used:
-  - "Antigravity IDE (Claude)"
+  - "Antigravity IDE (Gemini)"
 
 ai_usage_summary: |
-  Used Antigravity IDE (Claude Opus) for architecture discussion, code scaffolding,
-  and iterative development. All scoring logic, skill taxonomy, honeypot heuristics,
-  and ranking algorithms are original engineering work. No candidate data was fed
-  to any external LLM during ranking. The ranking pipeline uses zero ML libraries -
-  pure Python standard library with feature engineering and weighted scoring.
+  Used Antigravity IDE (Gemini-based AI agent) for architecture discussion,
+  code scaffolding, and iterative development. All scoring logic, skill
+  taxonomy, honeypot heuristics, and ranking algorithms are original
+  engineering work developed through human-AI pair programming. No candidate
+  data was fed to any external LLM during ranking. The pipeline runs fully
+  offline after initial model download.
 
 # ============================================================================
 # Approach summary
 # ============================================================================
 methodology_summary: |
-  Feature-engineering ranker with multi-dimensional scoring and explicit
-  honeypot detection. Six scoring dimensions: Role Fit (30%, title-career
-  coherence), Skills Match (25%, semantic taxonomy with trust multipliers),
-  Career Quality (15%, product-vs-services, tenure), Education (5%, tier/field),
-  Behavioral Signals (15%, availability/responsiveness), and Red Flags (10%,
-  multiplicative penalty for keyword-stuffers, consulting-only careers, domain
-  mismatch). Hand-crafted skill taxonomy maps 150+ skills to 11 categories.
-  Honeypot detector uses 7 heuristic checks. Runtime: ~35 seconds for 100K
-  candidates on CPU. Zero external dependencies for ranking.
+  Three-stage hybrid ranker combining rule-based scoring, semantic embeddings,
+  and cross-encoder reranking. Stage 1 scores all 100K candidates with a
+  6-dimension rule engine (Role Fit, Skills Match, Career Quality, Education,
+  Behavioral Signals, Red Flags) and a 10-check honeypot detector that catches
+  ~68% of candidates as traps via summary-title contradiction, title-description
+  domain clash, self-learner template detection, career incoherence, and
+  skill-career mismatch analysis. Stage 2 embeds only the top 500 survivors
+  using BAAI/bge-small-en-v1.5 for semantic similarity. Stage 3 applies
+  cross-encoder/ms-marco-MiniLM-L-6-v2 reranking on the top 200. A hand-crafted
+  skill taxonomy maps 150+ skills to 11 relevance categories. Fairness audit
+  checks representation across college tier, location, and experience band.
+  Total runtime: ~143 seconds for 100K candidates on CPU. Zero honeypots in
+  top 100. Top 10 are all Senior AI/ML/NLP Engineers.
 
 # ============================================================================
 # Declarations
