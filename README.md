@@ -102,7 +102,7 @@ python download_models.py
 # Full pipeline  — embeddings + cross-encoder + fairness
 python scripts/run_ranking.py \
   --candidates candidates.jsonl \
-  --out dheeraj-droid.csv \
+  --out WorthyHire.csv \
   --fairness-report fairness_report.json \
   --verbose
 ```

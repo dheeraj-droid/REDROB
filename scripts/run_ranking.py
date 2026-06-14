@@ -94,8 +94,8 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python scripts/run_ranking.py --candidates data/sample_input/sample_candidates.json --out dheeraj-droid.csv
-  python scripts/run_ranking.py --candidates candidates.jsonl --out dheeraj-droid.csv --no-embeddings --verbose
+  python scripts/run_ranking.py --candidates data/sample_input/sample_candidates.json --out WorthyHire.csv
+  python scripts/run_ranking.py --candidates candidates.jsonl --out WorthyHire.csv --no-embeddings --verbose
         """,
     )
     parser.add_argument(
@@ -103,8 +103,8 @@ Examples:
         help="Path to candidate JSON/JSONL file",
     )
     parser.add_argument(
-        "--out", default="dheeraj-droid.csv",
-        help="Output CSV file path (default: dheeraj-droid.csv)",
+        "--out", default="WorthyHire.csv",
+        help="Output CSV file path (default: WorthyHire.csv)",
     )
     parser.add_argument(
         "--top-n", type=int, default=100,
