@@ -37,7 +37,7 @@ compute:
   uses_gpu_for_inference: false
   has_network_during_ranking: false
   pre_computation_required: true
-  pre_computation_time_minutes: 1
+  pre_computation_time_minutes: 2
 
 # ============================================================================
 # AI tools declaration
