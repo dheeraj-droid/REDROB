@@ -1,0 +1,77 @@
+# Redrob Hackathon — Submission Metadata
+# Filled in for the Intelligent Candidate Discovery & Ranking Challenge
+
+# ============================================================================
+# Team identity
+# ============================================================================
+team_name: "dheeraj-droid"
+
+primary_contact:
+  name: "Dheeraj Reddy"
+  email: "dheerajreddy@example.com"
+  phone: "+91-XXXXXXXXXX"
+
+team_members:
+  - name: "Dheeraj Reddy"
+    email: "dheerajreddy@example.com"
+    role: "ML Engineer"
+
+# ============================================================================
+# Code and reproducibility
+# ============================================================================
+github_repo: "https://github.com/dheeraj-droid/redrob-ai-ranker"
+
+sandbox_link: "https://huggingface.co/spaces/dheeraj-droid/redrob-ranker"
+
+reproduce_command: "python rank.py --candidates ./candidates.jsonl --out ./submission.csv"
+
+# ============================================================================
+# Compute environment
+# ============================================================================
+compute:
+  platform: "Windows PC"
+  cpu_cores: 8
+  ram_gb: 16
+  python_version: "3.12.11"
+  os: "Windows"
+  uses_gpu_for_inference: false
+  has_network_during_ranking: false
+  pre_computation_required: false
+  pre_computation_time_minutes: 0
+
+# ============================================================================
+# AI tools declaration
+# ============================================================================
+ai_tools_used:
+  - "Antigravity IDE (Claude)"
+
+ai_usage_summary: |
+  Used Antigravity IDE (Claude Opus) for architecture discussion, code scaffolding,
+  and iterative development. All scoring logic, skill taxonomy, honeypot heuristics,
+  and ranking algorithms are original engineering work. No candidate data was fed
+  to any external LLM during ranking. The ranking pipeline uses zero ML libraries -
+  pure Python standard library with feature engineering and weighted scoring.
+
+# ============================================================================
+# Approach summary
+# ============================================================================
+methodology_summary: |
+  Feature-engineering ranker with multi-dimensional scoring and explicit
+  honeypot detection. Six scoring dimensions: Role Fit (30%, title-career
+  coherence), Skills Match (25%, semantic taxonomy with trust multipliers),
+  Career Quality (15%, product-vs-services, tenure), Education (5%, tier/field),
+  Behavioral Signals (15%, availability/responsiveness), and Red Flags (10%,
+  multiplicative penalty for keyword-stuffers, consulting-only careers, domain
+  mismatch). Hand-crafted skill taxonomy maps 150+ skills to 11 categories.
+  Honeypot detector uses 7 heuristic checks. Runtime: ~35 seconds for 100K
+  candidates on CPU. Zero external dependencies for ranking.
+
+# ============================================================================
+# Declarations
+# ============================================================================
+declarations:
+  read_submission_spec: true
+  code_is_original_work: true
+  no_collusion: true
+  honeypot_check_done: true
+  reproduction_tested: true
