@@ -187,6 +187,14 @@ def main():
     print("[4/5] Generating reasoning...")
 
     ranked_output = []
+    
+    if top_candidates:
+        max_raw = top_candidates[0]["final_score"]
+        min_raw = top_candidates[-1]["final_score"]
+    else:
+        max_raw = 1.0
+        min_raw = 0.0
+
     for rank, entry in enumerate(top_candidates, 1):
         reasoning = generate_reasoning(
             entry["candidate"],
@@ -194,9 +202,8 @@ def main():
             rank,
         )
         # Normalize score to submission range
-        # Map to [0.2, 0.999] so ranks are clearly differentiated
         norm_score = _normalize_score(
-            entry["final_score"], rank, top_n
+            entry["final_score"], rank, top_n, min_raw, max_raw
         )
 
         ranked_output.append({
@@ -253,16 +260,24 @@ def main():
             print(f"    ... and {len(skipped_honeypots) - 5} more")
 
 
-def _normalize_score(raw_score: float, rank: int, total: int) -> float:
+def _normalize_score(raw_score: float, rank: int, total: int, min_raw: float, max_raw: float) -> float:
     """
-    Normalize scores to be strictly decreasing by rank.
-    Maps to [0.2000, 0.9990] range with guaranteed monotonic decrease.
+    Normalize scores proportionally to preserve actual score gaps.
+    Maps to [0.2000, 0.9990] range.
     """
-    # Linear interpolation ensuring strict decrease
-    max_score = 0.9990
-    min_score = 0.2000
-    step = (max_score - min_score) / (total - 1) if total > 1 else 0
-    return max_score - (rank - 1) * step
+    target_max = 0.9990
+    target_min = 0.2000
+    
+    if max_raw == min_raw or max_raw <= 0:
+        base_norm = target_max - (rank - 1) * (target_max - target_min) / max(total - 1, 1)
+    else:
+        # Proportional mapping based on max and min raw scores in the top N
+        ratio = (raw_score - min_raw) / (max_raw - min_raw)
+        base_norm = target_min + ratio * (target_max - target_min)
+        
+    # Subtract a tiny fraction to guarantee strict descent for exact ties
+    tie_breaker = (rank - 1) * 0.00001
+    return base_norm - tie_breaker
 
 
 if __name__ == "__main__":

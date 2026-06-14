@@ -13,6 +13,7 @@ All scores are normalized to [0, 1] before weighted fusion.
 """
 
 import math
+import re
 from datetime import datetime, date
 from typing import Any
 
@@ -436,7 +437,7 @@ def _score_education(education: list, jd: JDRequirements) -> tuple[float, dict]:
     """Score education quality — tier, field relevance."""
     sig = {}
     if not education:
-        return 0.3, sig  # No education info → neutral
+        return 0.5, sig  # No education info → neutral
 
     best_score = 0.0
     for edu in education:
@@ -566,15 +567,48 @@ def _score_behavioral(signals: dict, profile: dict, jd: JDRequirements) -> tuple
     sig["location"] = profile.get("location", "")
     sig["country"] = profile.get("country", "")
 
-    # ── Saved by recruiters (social proof) ────────────────────────────────
+    # ── Speed of Communication ────────────────────────────────────────────
+    resp_time = signals.get("avg_response_time_hours", -1)
+    if resp_time < 0:
+        speed_score = 0.5
+    elif resp_time <= 24:
+        speed_score = 1.0
+    elif resp_time <= 48:
+        speed_score = 0.8
+    elif resp_time <= 120:
+        speed_score = 0.5
+    else:
+        speed_score = 0.2
+    sig["response_speed_hours"] = resp_time if resp_time >= 0 else "N/A"
+
+    # ── Market Demand / Social Proof ──────────────────────────────────────
     saved = signals.get("saved_by_recruiters_30d", 0)
-    saved_score = min(saved / 10, 1.0)
+    views = signals.get("profile_views_received_30d", 0)
+    searches = signals.get("search_appearance_30d", 0)
+    market_score = (views / 50.0 + searches / 100.0 + saved / 10.0) / 3.0
+    demand_score = min(market_score, 1.0)
+    sig["market_demand_score"] = round(demand_score, 2)
+
+    # ── Active Job Hunting Volume ─────────────────────────────────────────
+    apps = signals.get("applications_submitted_30d", -1)
+    if apps < 0:
+        app_score = 0.5
+    elif apps == 0:
+        app_score = 0.4
+    elif apps <= 50:
+        app_score = 1.0
+    elif apps <= 100:
+        app_score = 0.7
+    else:
+        app_score = 0.3
+    sig["applications_30d"] = apps if apps >= 0 else "N/A"
 
     # Combine with weights
     final = (
-        otw_score * 0.12 +
+        otw_score * 0.09 +            # Was 0.12 (-0.03 for apps)
         recency_score * 0.12 +
-        resp_score * 0.18 +
+        resp_score * 0.12 +           # Was 0.18 (-0.06 for speed)
+        speed_score * 0.06 +
         notice_score * 0.10 +
         completeness_score * 0.05 +
         github_score * 0.10 +
@@ -582,7 +616,8 @@ def _score_behavioral(signals: dict, profile: dict, jd: JDRequirements) -> tuple
         offer_score * 0.03 +
         verification_score * 0.05 +
         location_score * 0.15 +
-        saved_score * 0.05
+        demand_score * 0.05 +         # Replaces saved_score
+        app_score * 0.03
     )
 
     return final, sig
@@ -625,7 +660,7 @@ def _location_fit_score(
 
     # Check if location matches preferred cities
     for loc in jd.preferred_locations:
-        if loc in location:
+        if re.search(rf"\b{re.escape(loc)}\b", location):
             return 1.0
 
     # In India but not preferred city
@@ -699,7 +734,7 @@ def _score_red_flags(
         cat = classify_skill(skill.get("name", ""))
         if cat in ("computer_vision", "speech_audio"):
             has_cv_speech = True
-        if cat in ("core_ai_ml", "vector_db_retrieval"):
+        if cat in ("core_ai_ml", "vector_db_retrieval", "ml_foundations", "deep_learning"):
             has_nlp_ir = True
 
     if has_cv_speech and not has_nlp_ir:
@@ -724,6 +759,15 @@ def _score_red_flags(
                 sig["flag_long_inactive"] = True
         except (ValueError, TypeError):
             pass
+
+    # ── Red Flag 7: Salary expectation mismatch ───────────────────────────
+    expected_salary = signals.get("expected_salary_range_inr_lpa", {})
+    if isinstance(expected_salary, dict):
+        min_expected = expected_salary.get("min", 0.0)
+        if min_expected > jd.salary_max_lpa:
+            penalty *= 0.3
+            sig["flag_budget_mismatch"] = True
+            sig["budget_mismatch_detail"] = f"Min {min_expected}LPA > max {jd.salary_max_lpa}LPA"
 
     return penalty, sig
 

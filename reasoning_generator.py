@@ -88,6 +88,16 @@ def generate_reasoning(
     elif response_rate >= 0.4:
         strengths.append(f"good responsiveness ({response_rate:.0%})")
 
+    # Fast response speed
+    speed = signals.get("avg_response_time_hours", -1)
+    if 0 <= speed <= 24:
+        strengths.append(f"fast response times ({speed:.1f}h avg)")
+
+    # Market demand
+    demand_score = scoring_signals.get("market_demand_score", 0.0)
+    if demand_score >= 0.8:
+        strengths.append("high market demand")
+
     # GitHub
     github = signals.get("github_activity_score", -1)
     if github >= 50:
@@ -100,11 +110,21 @@ def generate_reasoning(
         strengths.append(f"based in {location}")
 
     if strengths:
-        parts.append("; ".join(strengths[:4]))
+        parts.append("; ".join(strengths[:5]))
 
     # ── Part 3: Key concerns (for lower-ranked candidates) ────────────────
     if rank > 30:
         concerns = []
+
+        # Budget mismatch
+        if scoring_signals.get("flag_budget_mismatch"):
+            detail = scoring_signals.get("budget_mismatch_detail", "exceeds budget")
+            concerns.append(f"budget mismatch ({detail})")
+
+        # Mass applying
+        apps = signals.get("applications_submitted_30d", 0)
+        if apps > 100:
+            concerns.append(f"mass applying ({apps} apps/mo)")
 
         # Low response rate
         if response_rate < 0.2:
@@ -128,7 +148,7 @@ def generate_reasoning(
             concerns.append("inactive for 6+ months")
 
         if concerns:
-            parts.append("concerns: " + ", ".join(concerns[:2]))
+            parts.append("concerns: " + ", ".join(concerns[:3]))
 
     # ── Assemble ──────────────────────────────────────────────────────────
     reasoning = ". ".join(parts) + "."
@@ -155,6 +175,14 @@ def _get_top_relevant_skills(skills: list, limit: int = 3) -> list[str]:
         score = relevance * prof_w.get(prof, 0.3)
         if relevance >= 0.4:  # Only include relevant skills
             scored.append((name, score))
+
+    if not scored and skills:
+        # Fallback if no skills met the threshold
+        for skill in skills:
+            name = skill.get("name", "")
+            prof = skill.get("proficiency", "")
+            prof_w = {"expert": 1.0, "advanced": 0.8, "intermediate": 0.5, "beginner": 0.2}
+            scored.append((name, prof_w.get(prof, 0.3)))
 
     scored.sort(key=lambda x: -x[1])
     return [name for name, _ in scored[:limit]]
