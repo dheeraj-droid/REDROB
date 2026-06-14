@@ -276,8 +276,10 @@ def _normalize_score(raw_score: float, rank: int, total: int, min_raw: float, ma
         base_norm = target_min + ratio * (target_max - target_min)
         
     # Subtract a tiny fraction to guarantee strict descent for exact ties
+    # but ensure it never inverts the order when spread is compressed
     tie_breaker = (rank - 1) * 0.00001
-    return base_norm - tie_breaker
+    norm_score = max(base_norm - tie_breaker, target_min + (total - rank) * 0.00001)
+    return norm_score
 
 
 if __name__ == "__main__":
