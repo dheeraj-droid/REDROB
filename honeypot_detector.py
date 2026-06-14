@@ -239,7 +239,7 @@ def detect_honeypot(candidate: dict) -> tuple[bool, list[str]]:
                 )
                 score += 1.5
 
-    is_honeypot = score >= 3.0
+    is_honeypot = score >= 2.0
     return is_honeypot, flags
 
 
