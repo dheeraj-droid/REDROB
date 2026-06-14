@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environment
+venv/
+.env/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Data files (too large for git)
+[PUB]*/
+*.jsonl
+*.jsonl.gz
+*.zip
+
+# Keep sample data
+!sample_candidates.json
+!sample_submission.csv
+
+# Logs
+*.log
+
+# Temp
+read_docx.py
